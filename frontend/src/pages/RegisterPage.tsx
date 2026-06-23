@@ -18,13 +18,16 @@ function RegisterPage(){
 
     const register = async() => {
         try{
-            await api.post("/api/users/register/", {
+            const response = await api.post("/api/users/register/", {
                 username,
                 email,
                 password
             })
-            navigate("/login")
-        }catch{
+            console.log(response.data)
+            alert("Registration Successfull...")
+            navigate("/")
+        }catch(error){
+            console.log(error)
             alert("Registration Failed...")
         }
     }
@@ -72,7 +75,7 @@ function RegisterPage(){
                     <Button className="w-full" onClick={register}>
                         Register
                     </Button>
-                    
+
                 </CardContent>
             </Card>
         </div>
