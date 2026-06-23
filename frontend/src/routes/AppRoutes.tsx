@@ -4,6 +4,7 @@ import LoginPage from "@/pages/LoginPage"
 import RegisterPage from "@/pages/RegisterPage"
 import DashboardPage from "@/pages/DashboardPage"
 import CategoriesPage from "@/pages/CategoriesPage"
+import ProductPage from "@/pages/ProductsPage"
 
 import ProtectedRoute from "./ProtectedRoute"
 
@@ -23,6 +24,11 @@ function AppRoutes(){
                 <Route path="/categories" element={
                     <ProtectedRoute>
                         <CategoriesPage />
+                    </ProtectedRoute>
+                } />
+                <Route path="/products" element={
+                    <ProtectedRoute>
+                        <ProductPage />
                     </ProtectedRoute>
                 } />
             </Routes>
