@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react"
+import type{ Transaction } from "@/types/inventory"
 
 import api from "@/api/axios"
 
@@ -13,7 +14,7 @@ function TransactionsPage(){
 
     const [products,setProducts] = useState<any[]>([])
 
-    const [transactions,setTransactions] = useState<any[]>([])
+    const [transactions,setTransactions] = useState<Transaction[]>([])
 
     const [product,setProduct] = useState("")
 

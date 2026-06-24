@@ -9,10 +9,12 @@ function Sidebar(){
             <div className="p-6">
 
                 <h2 className="font-semibold text-lg">
-
-                    Management
-
+                    StockFlow ERP
                 </h2>
+
+                <p className="text-sm text-muted-foreground">
+                    Inventory & Sales Platform
+                </p>
 
             </div>
 

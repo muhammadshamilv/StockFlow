@@ -3,6 +3,7 @@ import api from "@/api/axios"
 import DashboardLayout from "@/layouts/DashboardLayout"
 
 import { useState, useEffect } from "react"
+import type { Category } from "@/types/inventory"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 
 function CategoriesPage(){
 
-    const [categories, setCategories]= useState<any[]>([])
+    const [categories, setCategories]= useState<Category[]>([])
 
     const [name, setName] = useState("")
 

@@ -3,6 +3,7 @@ import api from "@/api/axios"
 import DashboardLayout from "@/layouts/DashboardLayout"
 
 import { useState, useEffect } from "react"
+import type { Product } from "@/types/inventory"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -15,7 +16,7 @@ import { Target } from "lucide-react"
 
 function ProductPage(){
 
-    const [products, setProducts] = useState<any[]>([])
+    const [products, setProducts] = useState<Product[]>([])
 
     const [categories, setCategories] = useState<any[]>([])
 

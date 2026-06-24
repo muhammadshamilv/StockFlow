@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react"
+import type { DashboardStats } from "@/types/dashboard"
 
 import api from "@/api/axios"
 
 import DashboardLayout from "@/layouts/DashboardLayout"
+import AnalyticsChart from "@/components/AnalyticsChart"
 
 import { Button } from "@/components/ui/button"
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 import { useNavigate } from "react-router-dom"
@@ -14,7 +15,7 @@ function DashboardPage(){
 
     const navigate = useNavigate()
 
-    const [stats,setStats] = useState<any>({
+    const [stats,setStats] = useState<DashboardStats>({
         total_products:0,
         total_categories:0,
         total_quantity:0,
@@ -31,12 +32,16 @@ function DashboardPage(){
         top_selling_products:[],
     })
 
+    const [loading, setLoading] = useState(true)
+
     useEffect(()=>{
         api.get(
             "/api/inventory/dashboard/"
         )
         .then((res)=>{
             setStats(res.data)
+        }).finally(() => {
+            setLoading(false)
         })
     },[])
 
@@ -44,6 +49,16 @@ function DashboardPage(){
         localStorage.removeItem("access")
         localStorage.removeItem("refresh")
         navigate("/")
+    }
+
+    if(loading){
+        return(
+            <DashboardLayout>
+                <div className="text-center py-20">
+                    Loading Dashboard...
+                </div>
+            </DashboardLayout>
+        )
     }
 
     return(
@@ -56,12 +71,12 @@ function DashboardPage(){
 
                     <div>
 
-                        <h1 className="text-4xl font-bold">
-                            Dashboard
+                        <h1 className="text-5xl font-bold tracking-tight">
+                            StockFlow Analytics
                         </h1>
 
                         <p className="text-muted-foreground">
-                            Inventory Overview
+                            Inventory, Revenue and Business Performance
                         </p>
 
                     </div>
@@ -71,6 +86,22 @@ function DashboardPage(){
                     </Button>
 
                 </div>
+
+                <Card>
+                    <CardContent className="py-6">
+            
+                        <h2 className="text-2xl font-semibold">
+                            Welcome Back 👋
+                        </h2>
+
+                        <p className="text-muted-foreground mt-2">
+                            Monitor inventory health,
+                            sales performance and
+                            business growth from one place.
+                        </p>
+                
+                    </CardContent>
+                </Card>
 
                 <div className="grid md-grid-cols-2 xl:grid-cols-4 gap-6">
 
@@ -293,6 +324,22 @@ function DashboardPage(){
                     </Card>
 
                 </div>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle>
+                            Business Analytics
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <AnalyticsChart
+                            totalProducts={stats.total_products}    
+                            totalCategories={stats.total_categories}
+                            totalTransactions={stats.total_transactions}
+                            totalSales={stats.total_sales}
+                        />
+                    </CardContent>
+                </Card>
 
             </div>
 
