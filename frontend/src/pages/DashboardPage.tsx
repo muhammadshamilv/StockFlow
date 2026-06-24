@@ -25,7 +25,10 @@ function DashboardPage(){
         stock_in_count:0,
         stock_out_count:0,
         recent_products: [],
-        recent_transactions:[]
+        recent_transactions:[],
+        total_sales:0,
+        total_revenue:0,
+        top_selling_products:[],
     })
 
     useEffect(()=>{
@@ -69,7 +72,7 @@ function DashboardPage(){
 
                 </div>
 
-                <div className="grid lg:grid-cols-3 gap-6">
+                <div className="grid md-grid-cols-2 xl:grid-cols-4 gap-6">
 
                     <Card>
                         <CardHeader>
@@ -191,6 +194,32 @@ function DashboardPage(){
                     <Card>
                         <CardHeader>
                             <CardTitle>
+                                Total Sales
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-4xl font-bold">
+                                {stats.total_sales}
+                            </p>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>
+                                Revenue
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-3xl font-bold">
+                                ₹{stats.total_revenue}
+                            </p>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>
                                 Recent Products
                             </CardTitle>
                         </CardHeader>
@@ -235,8 +264,33 @@ function DashboardPage(){
                                 )
                             )
                         }
-                    </CardContent>
-                </Card>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>
+                                Top Selling Products
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                        {
+                            stats.top_selling_products?.map(
+                                (product:any, index:number) => (
+                                    <div key={index} className="border-b py-3">
+                                        <div>
+                                            {product.product}
+                                        </div>
+                                        <div>
+                                            Sold:
+                                            {product.quantity}
+                                        </div>
+                                    </div>
+                                )
+                            )
+                        }
+                        </CardContent>
+                    </Card>
 
                 </div>
 

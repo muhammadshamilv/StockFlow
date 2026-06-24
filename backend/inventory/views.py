@@ -112,6 +112,12 @@ def dashboard_stats(request):
     total_products = Product.objects.count()
     total_categories = Category.objects.count()
     total_transactions = InventoryTransaction.objects.count()
+    total_sales = Sale.objects.count()
+    total_revenue = (
+        Sale.objects.aggregate(
+            total=Sum("total_amount")
+        )["total"] or 0
+    )
     total_quantity = (
         Product.objects.aggregate(
             total=Sum("quantity")
@@ -148,7 +154,6 @@ def dashboard_stats(request):
     recent_product_data = []
 
     for product in recent_products:
-
         recent_product_data.append({
             "id": product.id,
             "name": product.name,
@@ -168,6 +173,16 @@ def dashboard_stats(request):
             "quantity": transaction.quantity
         })
 
+    top_sales = Sale.objects.order_by(
+        "-quantity"
+    )[:5]
+    top_selling_products = []
+    for sale in top_sales:
+        top_selling_products.append({
+            "product": sale.product.name,
+            "quantity": sale.quantity
+        })
+
     return Response({
         "total_products": total_products,
         "total_categories": total_categories,
@@ -179,7 +194,10 @@ def dashboard_stats(request):
         "stock_in_count": stock_in_count,
         "stock_out_count": stock_out_count,
         "recent_products": recent_product_data,
-        "recent_transactions": recent_data
+        "recent_transactions": recent_data,
+        "total_sales": total_sales,
+        "total_revenue": total_revenue,
+        "top_selling_products": top_selling_products,
     })
 
 
