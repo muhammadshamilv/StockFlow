@@ -1,5 +1,7 @@
 import api from "@/api/axios"
 
+import DashboardLayout from "@/layouts/DashboardLayout"
+
 import { useState, useEffect } from "react"
 
 import { Button } from "@/components/ui/button"
@@ -33,35 +35,37 @@ function CategoriesPage(){
     }
 
     return(
-        <div className="p-10">
+        <DashboardLayout>
+            <div className="p-10">
 
-            <Card>
+                <Card>
 
-                <CardHeader>
-                    <CardTitle>
-                        Categories
-                    </CardTitle>
-                </CardHeader>
+                    <CardHeader>
+                        <CardTitle>
+                            Categories
+                        </CardTitle>
+                    </CardHeader>
 
-                <CardContent className="space-y-4">
+                    <CardContent className="space-y-4">
 
-                    <Input value={name} placeholder="Category Name" onChange={(e) => setName(e.target.value)} />
+                        <Input value={name} placeholder="Category Name" onChange={(e) => setName(e.target.value)} />
 
-                    <Button onClick={addCategories}>
-                        Add Categories
-                    </Button>
-                    {
-                        categories.map((category:any) => (
-                            <div key={category.id}>
-                                {category.name}
-                            </div>
-                        ))
-                    }
-                </CardContent>
+                        <Button onClick={addCategories}>
+                            Add Categories
+                        </Button>
+                        {
+                            categories.map((category:any) => (
+                                <div key={category.id}>
+                                    {category.name}
+                                </div>
+                            ))
+                        }
+                    </CardContent>
 
-            </Card>
-            
-        </div>
+                </Card>
+
+            </div>
+        </DashboardLayout>
     )
 }
 export default CategoriesPage
