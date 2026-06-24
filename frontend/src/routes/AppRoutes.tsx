@@ -5,6 +5,8 @@ import RegisterPage from "@/pages/RegisterPage"
 import DashboardPage from "@/pages/DashboardPage"
 import CategoriesPage from "@/pages/CategoriesPage"
 import ProductPage from "@/pages/ProductsPage"
+import TransactionsPage from "@/pages/TransactionsPage"
+import SalesPage from "@/pages/SalesPage"
 
 import ProtectedRoute from "./ProtectedRoute"
 
@@ -29,6 +31,16 @@ function AppRoutes(){
                 <Route path="/products" element={
                     <ProtectedRoute>
                         <ProductPage />
+                    </ProtectedRoute>
+                } />
+                <Route path="/transactions" element={
+                    <ProtectedRoute>
+                        <TransactionsPage />
+                    </ProtectedRoute>
+                } />
+                <Route path="/sales" element={
+                    <ProtectedRoute>
+                        <SalesPage />
                     </ProtectedRoute>
                 } />
             </Routes>

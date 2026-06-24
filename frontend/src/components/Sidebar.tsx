@@ -30,6 +30,14 @@ function Sidebar(){
                     Products
                 </Link>
 
+                <Link to="/transactions" className="block rounded-lg px-4 py-3 hover:bg-accent">
+                    Transactions 
+                </Link>
+
+                <Link to="/sales" className="block rounded-lg px-4 py-3 hover:bg-accent">
+                    Sales
+                </Link>
+
             </nav>
 
         </aside>

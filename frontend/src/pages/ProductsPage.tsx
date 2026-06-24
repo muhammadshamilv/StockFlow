@@ -9,6 +9,9 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Target } from "lucide-react"
 
 function ProductPage(){
 
@@ -23,6 +26,15 @@ function ProductPage(){
     const [price, setPrice] = useState("")
 
     const [quantity, setQuantity] = useState("")
+
+    const [search, setSearch] = useState("")
+
+    const [editProduct, setEditProduct] = useState<any>(null)
+
+    const filteredProducts = products.filter(
+        (product:any) => 
+            product.name.toLowerCase().includes(search.toLowerCase())
+    )
 
     const loadProducts = () => {
         api.get("/api/inventory/products/").then((res) => {
@@ -58,6 +70,13 @@ function ProductPage(){
 
     const deleteProduct = (id: number) => {
         api.delete(`/api/inventory/products/${id}/`).then(() => {
+            loadProducts()
+        })
+    }
+
+    const updateProduct = () => {
+        api.put(`/api/inventory/products/${editProduct.id}/`, editProduct).then(() => {
+            setEditProduct(null)
             loadProducts()
         })
     }
@@ -100,6 +119,8 @@ function ProductPage(){
                     <Button onClick={addProducts}>
                         Add Products
                     </Button>
+
+                    <Input placeholder="Search Products...." value={search} onChange={(e) => setSearch(e.target.value)} />
                     {
                         products.length === 0 && (
                             <div className="border rounded-xl p-10 text-center">
@@ -107,49 +128,103 @@ function ProductPage(){
                             </div>
                         )
                     }
-                    {
-                        products.map((product:any) => (
-                            <div key={product.id} className="border p-3 space-y-2">
-                                <div className="flex justify-between">
-                                    
-                                    <h3 className="font-semibold">
-                                        {product.name}
-                                    </h3>
-                                    {
-                                        product.quantity <= 5 ? 
-                                        <Badge variant="destructive">
-                                            Low Stock
-                                        </Badge>
-                                        :
-                                        <Badge>
-                                            In Stock
-                                        </Badge>
-                                    }
-                                </div>
 
-                                <p>
-                                    Category : {product.category_name}
-                                </p>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
 
-                                <p>
-                                    price : ₹{product.price}
-                                </p>
+                                <TableHead>Product</TableHead>
+                                <TableHead>Category</TableHead>
+                                <TableHead>Price</TableHead>
+                                <TableHead>Quantity</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead>Actions</TableHead>
 
-                                <p>
-                                    Quantity : {product.quantity}
-                                </p>
+                            </TableRow>
+                        </TableHeader>
 
-                                <p>
-                                    Inventory Value : ₹{(Number(product.price) * Number(product.quantity))}
-                                </p>
+                        <TableBody>
+                            {
+                                filteredProducts.map((product:any) => (
+                                    <TableRow key={product.id}>
 
-                                <Button variant="destructive" onClick={() => deleteProduct(product.id)}>
-                                    Delete
-                                </Button>
+                                        <TableCell>
+                                            {product.name}
+                                        </TableCell>
 
-                            </div>
-                        ))
-                    }
+                                        <TableCell>
+                                            {product.category_name}
+                                        </TableCell>
+
+                                        <TableCell>
+                                            ₹{product.price}
+                                        </TableCell>
+
+                                        <TableCell>
+                                            {product.quantity}
+                                        </TableCell>
+
+                                        <TableCell>
+                                            {
+                                                product.quantity <= 5 ?
+                                                <Badge variant="destructive">
+                                                    Low Stock
+                                                </Badge>
+                                                :
+                                                <Badge>
+                                                    In Stock
+                                                </Badge>
+                                            }
+                                        </TableCell>
+
+                                        <TableCell>
+                                            <div className="flex gap-2">
+
+                                                <Dialog>
+                                                    <DialogTrigger asChild>
+                                                        <Button size="sm" onClick={() => setEditProduct(product)}>
+                                                            Edit
+                                                        </Button>
+                                                    </DialogTrigger>
+                                                    <DialogContent>
+                                                        <DialogHeader>
+                                                            <DialogTitle>
+                                                                Edit Product
+                                                            </DialogTitle>
+                                                        </DialogHeader>
+                                                        {
+                                                            editProduct && (
+                                                                <div className="space-y-4">
+
+                                                                    <Input value={editProduct.name} onChange={(e) => setEditProduct({...editProduct, name:e.target.value})} />
+
+                                                                    <Input value={editProduct.price} onChange={(e) => setEditProduct({...editProduct, price:e.target.value})} />
+
+                                                                    <Input value={editProduct.quantity} onChange={(e) => setEditProduct({...editProduct, quantity:e.target.value})} />
+
+                                                                    <Button onClick={updateProduct}>
+                                                                        Save
+                                                                    </Button>
+
+                                                                </div>
+                                                            )
+                                                        }
+                                                    </DialogContent>
+                                                </Dialog>
+
+                                                <Button variant="destructive" size="sm" onClick={() => deleteProduct(product.id)}>
+                                                    Delete
+                                                </Button>
+                                                
+                                            </div>
+                                        </TableCell>
+
+                                    </TableRow>
+                                ))
+                            }
+                        </TableBody>
+                    </Table>
+
                 </CardContent>
 
             </Card>
