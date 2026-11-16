@@ -107,12 +107,12 @@ class SaleDetailSerializer(SaleListSerializer):
             "cancel_reason",
         ]
 
-    def get_gross_profit(self, obj) -> Decimal | None:
-        """Hidden from STAFF – margins are manager information."""
+    def get_gross_profit(self, obj) -> str | None:
+        """Hidden from STAFF – margins are manager information. String like every other money field."""
         user = self.context.get("request").user if self.context.get("request") else None
         if user is not None and not user.is_manager_or_above:
             return None
-        return obj.gross_profit
+        return f"{obj.gross_profit:.2f}"
 
     def get_cancelled_by_name(self, obj) -> str | None:
         return obj.cancelled_by.full_name if obj.cancelled_by else None

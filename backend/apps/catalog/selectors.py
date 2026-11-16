@@ -5,7 +5,7 @@ from decimal import Decimal
 from django.db.models import Count, DecimalField, ExpressionWrapper, F, Q, Sum, Value
 from django.db.models.functions import Coalesce
 
-from .models import Category, Product, Supplier
+from .models import Category, Product
 
 _stock_value_expr = ExpressionWrapper(
     F("products__cost_price") * F("products__quantity"),
@@ -25,14 +25,8 @@ def category_queryset():
     )
 
 
-def supplier_queryset():
-    return Supplier.objects.annotate(
-        product_count=Count("products", filter=Q(products__is_active=True), distinct=True),
-    )
-
-
 def product_queryset():
-    return Product.objects.select_related("category", "supplier")
+    return Product.objects.select_related("category")
 
 
 def product_status_summary() -> dict:

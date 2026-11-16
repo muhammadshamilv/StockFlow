@@ -28,7 +28,7 @@ api_v1 = [
     path("", include("apps.catalog.urls")),
     path("", include("apps.inventory.urls")),
     path("", include("apps.sales.urls")),
-    path("", include("apps.activity.urls")),
+    path("", include("apps.notifications.urls")),
     path("", include("apps.analytics.urls")),
 ]
 

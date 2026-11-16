@@ -1,0 +1,12 @@
+{
+  "recommendations": [
+    "ms-python.python",
+    "charliermarsh.ruff",
+    "esbenp.prettier-vscode",
+    "bradlc.vscode-tailwindcss",
+    "oxc.oxc-vscode",
+    "yoavbls.pretty-ts-errors",
+    "mtxr.sqltools",
+    "mtxr.sqltools-driver-pg"
+  ]
+}

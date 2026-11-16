@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Category, Product, Supplier
+from .models import Category, Product
 
 
 @admin.register(Category)
@@ -11,18 +11,11 @@ class CategoryAdmin(admin.ModelAdmin):
     prepopulated_fields = {"slug": ("name",)}
 
 
-@admin.register(Supplier)
-class SupplierAdmin(admin.ModelAdmin):
-    list_display = ("name", "contact_person", "email", "phone", "is_active")
-    list_filter = ("is_active",)
-    search_fields = ("name", "contact_person", "email", "tax_id")
-
-
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
     list_display = ("sku", "name", "category", "selling_price", "quantity", "reorder_level", "is_active")
     list_filter = ("is_active", "category", "unit")
     search_fields = ("sku", "name", "barcode")
-    list_select_related = ("category", "supplier")
+    list_select_related = ("category",)
     readonly_fields = ("quantity", "created_by", "created_at", "updated_at")
-    autocomplete_fields = ("category", "supplier")
+    autocomplete_fields = ("category",)

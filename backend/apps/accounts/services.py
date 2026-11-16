@@ -18,9 +18,8 @@ from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken, OutstandingToken
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from apps.core.signals import emit_activity
-
 from .models import User
+from .signals import user_registered
 
 logger = logging.getLogger("apps.accounts")
 
@@ -63,7 +62,7 @@ def register_user(
         last_name=last_name.strip(),
         role=User.Role.ADMIN if is_first_user else User.Role.STAFF,
     )
-    emit_activity(actor=user, verb="auth.registered", target=user, metadata={"role": user.role})
+    transaction.on_commit(lambda: user_registered.send(sender=User, user=user))
     return user
 
 
@@ -90,7 +89,6 @@ def authenticate_user(*, request, identifier: str, password: str) -> User:
 def login(*, request, user: User, remember: bool) -> TokenPair:
     pair = issue_tokens(user, remember=remember)
     user_logged_in.send(sender=user.__class__, request=request, user=user)  # updates last_login
-    emit_activity(actor=user, verb="auth.login", target=user, metadata={"remember": remember})
     return pair
 
 
@@ -102,7 +100,6 @@ def logout(*, request, raw_refresh: str | None) -> None:
             token.blacklist()
             if user:
                 user_logged_out.send(sender=User, request=request, user=user)
-                emit_activity(actor=user, verb="auth.logout", target=user)
         except TokenError:
             pass  # already invalid – nothing to revoke
 
@@ -168,7 +165,6 @@ def change_password(*, user: User, new_password: str) -> None:
     user.set_password(new_password)
     user.save(update_fields=["password"])
     revoke_all_tokens(user)
-    emit_activity(actor=user, verb="auth.password_changed", target=user)
 
 
 def send_password_reset_email(*, email: str) -> None:
@@ -189,12 +185,15 @@ def send_password_reset_email(*, email: str) -> None:
             f"Hi {user.first_name or user.username},\n\n"
             f"We received a request to reset your StockFlow password.\n"
             f"Open this link within {minutes} minutes to choose a new one:\n\n{link}\n\n"
-            "If you didn't request this, you can safely ignore this email.\n\n— StockFlow"
+            "If you didn't request this, you can safely ignore this email.\n\n- The StockFlow team"
         ),
         from_email=None,
         recipient_list=[user.email],
     )
-    emit_activity(actor=user, verb="auth.password_reset_requested", target=user)
+    if settings.DEBUG:
+        # Long URLs get quoted-printable-wrapped in the console email backend;
+        # log a clean, clickable copy for local development.
+        logger.info("Password reset link for %s: %s", user.email, link)
 
 
 def resolve_reset_user(*, uid: str, token: str) -> User:
@@ -213,4 +212,3 @@ def reset_password(*, user: User, new_password: str) -> None:
     user.set_password(new_password)
     user.save(update_fields=["password"])
     revoke_all_tokens(user)
-    emit_activity(actor=user, verb="auth.password_reset", target=user)

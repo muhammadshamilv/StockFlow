@@ -52,7 +52,7 @@ LOCAL_APPS = [
     "apps.catalog",
     "apps.inventory",
     "apps.sales",
-    "apps.activity",
+    "apps.notifications",
     "apps.analytics",
 ]
 

@@ -23,11 +23,11 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.accounts.models import User
-from apps.activity.models import ActivityLog, Notification
 from apps.catalog import services as catalog
-from apps.catalog.models import Category, Product, Supplier
+from apps.catalog.models import Category, Product
 from apps.inventory import services as inventory
 from apps.inventory.models import StockMovement
+from apps.notifications.models import Notification
 from apps.sales import services as sales
 from apps.sales.models import Customer, DocumentSequence, Sale
 
@@ -126,15 +126,6 @@ CATEGORIES = {
     ),
 }
 
-SUPPLIERS = [
-    ("TechSource Distributors", "Arjun Menon", "Kochi"),
-    ("FreshFarm Wholesale", "Fathima Rahman", "Kozhikode"),
-    ("PaperTrail Supplies", "Rahul Nair", "Thrissur"),
-    ("UrbanThread Garments", "Sneha Iyer", "Bengaluru"),
-    ("HomeNest Traders", "Vikram Shah", "Chennai"),
-    ("CarePlus Pharma Retail", "Anjali Das", "Kochi"),
-]
-
 CUSTOMERS = [
     "Aisha Khan",
     "Rohan Varma",
@@ -165,7 +156,7 @@ CUSTOMERS = [
 
 
 class Command(BaseCommand):
-    help = "Seed realistic demo data (users, catalog, customers, 90 days of sales)."
+    help = "Seed realistic demo data (users, catalog, customers, sales history)."
 
     def add_arguments(self, parser):
         parser.add_argument("--days", type=int, default=90)
@@ -186,12 +177,8 @@ class Command(BaseCommand):
         start = timezone.localdate() - timedelta(days=days)
 
         with transaction.atomic():
-            mark = self._last_log_id()
-            suppliers = self._suppliers()
-            products = self._catalog(suppliers, start)
+            products = self._catalog(start)
             customers = self._customers()
-            opening = timezone.make_aware(datetime.combine(start - timedelta(days=1), time(9, 0)))
-            self._stamp_logs_since(mark, opening)
         self._history(products, customers, users, start, days)
         self._tidy_notifications()
 
@@ -202,19 +189,19 @@ class Command(BaseCommand):
             )
         )
         if not no_users:
-            self.stdout.write("Demo logins (password Demo@12345): admin@ / manager@ / staff@stockflow.dev")
+            self.stdout.write(
+                f"Demo logins (password {DEMO_PASSWORD}): admin@ / manager@ / staff@stockflow.dev"
+            )
 
     # ------------------------------------------------------------------ #
     def _reset(self):
         self.stdout.write("Removing existing business data…")
         with transaction.atomic():
             Notification.objects.all().delete()
-            ActivityLog.objects.all().delete()
             Sale.objects.all().delete()  # cascades SaleItem
             StockMovement.objects.all()._raw_delete(StockMovement.objects.db)  # bypass immutability guard
             Product.objects.all().delete()
             Category.objects.all().delete()
-            Supplier.objects.all().delete()
             Customer.objects.all().delete()
             DocumentSequence.objects.all().delete()
 
@@ -244,33 +231,16 @@ class Command(BaseCommand):
             raise SystemExit("No users found. Run without --no-users or register an account first.")
         return users
 
-    def _suppliers(self) -> list[Supplier]:
-        return [
-            catalog.create_supplier(
-                user=self.admin,
-                name=name,
-                contact_person=contact,
-                email=f"orders@{name.split()[0].lower()}.in",
-                phone=f"+91 9{self.rng.randint(100000000, 999999999)}",
-                address=f"Industrial Estate, {city}",
-                tax_id=f"32AB{self.rng.randint(1000, 9999)}C1Z{i}",
-            )
-            for i, (name, contact, city) in enumerate(SUPPLIERS)
-        ]
-
-    def _catalog(self, suppliers, start) -> list[Product]:
+    def _catalog(self, start) -> list[Product]:
         products = []
-        for index, (cat_name, (color, items)) in enumerate(CATEGORIES.items()):
-            category = catalog.create_category(
-                user=self.admin, name=cat_name, color=color, description=f"{cat_name} products"
-            )
+        for cat_name, (color, items) in CATEGORIES.items():
+            category = catalog.create_category(name=cat_name, color=color, description=f"{cat_name} products")
             for name, cost, price in items:
                 reorder = self.rng.choice([5, 8, 10, 15, 20])
                 product = catalog.create_product(
                     user=self.admin,
                     name=name,
                     category=category,
-                    supplier=suppliers[index],
                     cost_price=Decimal(cost),
                     selling_price=Decimal(price),
                     reorder_level=reorder,
@@ -283,6 +253,7 @@ class Command(BaseCommand):
         opening = timezone.make_aware(datetime.combine(start - timedelta(days=1), time(9, 0)))
         StockMovement.objects.update(created_at=opening)
         Product.objects.update(created_at=opening)
+        Category.objects.update(created_at=opening)
         return products
 
     def _customers(self) -> list[Customer]:
@@ -306,7 +277,7 @@ class Command(BaseCommand):
             + [Sale.PaymentMethod.BANK_TRANSFER]
         )
         cashiers = users[1:] or users
-        quiet_tail = 6  # skip restocks in the final days so some alerts remain
+        quiet_tail = 6  # no restocks in the final days so some alerts remain
 
         for offset in range(days + 1):
             day = start + timedelta(days=offset)
@@ -317,6 +288,7 @@ class Command(BaseCommand):
             if offset % 7 == 3 and offset < days - quiet_tail:
                 self._restock(products, users[0], day)
 
+            now = timezone.now()
             stamps = sorted(
                 timezone.make_aware(
                     datetime.combine(
@@ -325,7 +297,6 @@ class Command(BaseCommand):
                 )
                 for _ in range(orders)
             )
-            now = timezone.now()
             stamps = [
                 s if s <= now else now - timedelta(minutes=len(stamps) - i) for i, s in enumerate(stamps)
             ]
@@ -347,7 +318,7 @@ class Command(BaseCommand):
                 subtotal = sum(line["product"].selling_price * line["quantity"] for line in lines.values())
                 discount = Decimal(self.rng.choice([0, 0, 0, 0, 5, 10])) * subtotal / 100
 
-                mark = self._last_log_id()
+                mark = self._last_notification_id()
                 sale = sales.create_sale(
                     user=self.rng.choice(cashiers),
                     items=list(lines.values()),
@@ -358,7 +329,7 @@ class Command(BaseCommand):
                 if self.rng.random() < 0.02:
                     sales.cancel_sale(sale=sale, user=users[0], reason="Customer returned items")
                 self._backdate(sale, stamp)
-                self._stamp_logs_since(mark, stamp)
+                self._stamp_notifications_since(mark, stamp)
                 for line in lines.values():
                     line["product"].refresh_from_db(fields=["quantity", "cost_price"])
 
@@ -367,7 +338,7 @@ class Command(BaseCommand):
 
     def _restock(self, products, user, day):
         stamp = timezone.make_aware(datetime.combine(day, time(8, 30)))
-        mark = self._last_log_id()
+        mark = self._last_notification_id()
         for product in products:
             if product.quantity <= product.reorder_level * 1.5:
                 qty = product.reorder_level * self.rng.randint(4, 7)
@@ -377,26 +348,21 @@ class Command(BaseCommand):
                     quantity=qty,
                     user=user,
                     unit_cost=cost,
-                    supplier=product.supplier,
                     reference=f"PO-{day:%y%m%d}",
                     note="Weekly replenishment",
                 )
                 StockMovement.objects.filter(pk=movement.pk).update(created_at=stamp)
                 product.refresh_from_db(fields=["quantity", "cost_price"])
-        self._stamp_logs_since(mark, stamp)
+        self._stamp_notifications_since(mark, stamp)
 
     @staticmethod
-    def _last_log_id() -> tuple[int, int]:
-        """High-water marks for activity logs and notifications."""
-        log_id = ActivityLog.objects.order_by("-id").values_list("id", flat=True).first() or 0
-        notif_id = Notification.objects.order_by("-id").values_list("id", flat=True).first() or 0
-        return log_id, notif_id
+    def _last_notification_id() -> int:
+        return Notification.objects.order_by("-id").values_list("id", flat=True).first() or 0
 
     @staticmethod
-    def _stamp_logs_since(mark: tuple[int, int], stamp) -> None:
-        """Give rows created since `mark` the simulated historical timestamp."""
-        ActivityLog.objects.filter(id__gt=mark[0]).update(created_at=stamp)
-        Notification.objects.filter(id__gt=mark[1]).update(created_at=stamp)
+    def _stamp_notifications_since(mark: int, stamp) -> None:
+        """Give notifications created since `mark` the simulated historical timestamp."""
+        Notification.objects.filter(id__gt=mark).update(created_at=stamp)
 
     def _backdate(self, sale, stamp):
         Sale.objects.filter(pk=sale.pk).update(created_at=stamp, updated_at=stamp)

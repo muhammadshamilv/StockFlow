@@ -1,7 +1,7 @@
 import django_filters
 from django.db.models import F
 
-from .models import Category, Product, Supplier
+from .models import Category, Product
 
 
 class NumberInFilter(django_filters.BaseInFilter, django_filters.NumberFilter):
@@ -14,15 +14,8 @@ class CategoryFilter(django_filters.FilterSet):
         fields = ["is_active"]
 
 
-class SupplierFilter(django_filters.FilterSet):
-    class Meta:
-        model = Supplier
-        fields = ["is_active"]
-
-
 class ProductFilter(django_filters.FilterSet):
     category = NumberInFilter(field_name="category_id")
-    supplier = NumberInFilter(field_name="supplier_id")
     stock_status = django_filters.ChoiceFilter(
         choices=Product.StockStatus.choices, method="filter_stock_status"
     )
@@ -33,7 +26,7 @@ class ProductFilter(django_filters.FilterSet):
 
     class Meta:
         model = Product
-        fields = ["category", "supplier", "stock_status", "is_active", "unit"]
+        fields = ["category", "stock_status", "is_active", "unit"]
 
     def filter_stock_status(self, queryset, name, value):
         if value == Product.StockStatus.OUT_OF_STOCK:

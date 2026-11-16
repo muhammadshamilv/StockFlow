@@ -23,7 +23,7 @@ class StockMovementViewSet(
     ordering = ["-created_at", "-id"]
 
     def get_queryset(self):
-        return StockMovement.objects.select_related("product", "supplier", "created_by")
+        return StockMovement.objects.select_related("product", "created_by")
 
     @extend_schema(request=StockMovementCreateSerializer, responses={201: StockMovementSerializer})
     def create(self, request, *args, **kwargs):
@@ -38,7 +38,6 @@ class StockMovementViewSet(
                 quantity=data["quantity"],
                 user=request.user,
                 unit_cost=data.get("unit_cost"),
-                supplier=data.get("supplier"),
                 reference=data["reference"],
                 note=data["note"],
             )

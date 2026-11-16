@@ -1,0 +1,28 @@
+# Local PostgreSQL for StockFlow (optional – use it if you don't want Postgres installed natively)
+#
+#   docker compose up -d          # start
+#   docker compose down           # stop (data is kept in the named volume)
+#
+# Matches backend/.env.example:
+#   DATABASE_URL=postgres://stockflow_user:stockflow123@localhost:5432/stockflow_db
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: stockflow-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: stockflow_db
+      POSTGRES_USER: stockflow_user
+      POSTGRES_PASSWORD: stockflow123
+    ports:
+      - "5432:5432"
+    volumes:
+      - stockflow_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U stockflow_user -d stockflow_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  stockflow_pgdata:

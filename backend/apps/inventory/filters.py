@@ -11,7 +11,7 @@ class StockMovementFilter(django_filters.FilterSet):
 
     class Meta:
         model = StockMovement
-        fields = ["product", "movement_type", "supplier", "created_by"]
+        fields = ["product", "movement_type", "created_by"]
 
     def filter_direction(self, queryset, name, value):
         from django.db.models import F

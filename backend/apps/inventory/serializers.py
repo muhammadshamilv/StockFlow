@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from apps.catalog.models import Product, Supplier
+from apps.catalog.models import Product
 
 from .models import StockMovement
 
@@ -12,7 +12,6 @@ class StockMovementSerializer(serializers.ModelSerializer):
     product_sku = serializers.CharField(source="product.sku", read_only=True)
     product_unit = serializers.CharField(source="product.unit", read_only=True)
     movement_type_display = serializers.CharField(source="get_movement_type_display", read_only=True)
-    supplier_name = serializers.CharField(source="supplier.name", read_only=True, default=None)
     created_by_name = serializers.SerializerMethodField()
     direction = serializers.CharField(read_only=True)
     signed_quantity = serializers.IntegerField(read_only=True)
@@ -33,8 +32,6 @@ class StockMovementSerializer(serializers.ModelSerializer):
             "quantity_before",
             "quantity_after",
             "unit_cost",
-            "supplier",
-            "supplier_name",
             "reference",
             "note",
             "created_by",
@@ -59,9 +56,6 @@ class StockMovementCreateSerializer(serializers.Serializer):
     unit_cost = serializers.DecimalField(
         max_digits=12, decimal_places=2, min_value=0, required=False, allow_null=True
     )
-    supplier = serializers.PrimaryKeyRelatedField(
-        queryset=Supplier.objects.filter(is_active=True), required=False, allow_null=True
-    )
     reference = serializers.CharField(max_length=60, required=False, allow_blank=True, default="")
     note = serializers.CharField(max_length=255, required=False, allow_blank=True, default="")
 
@@ -74,6 +68,8 @@ class StockMovementCreateSerializer(serializers.Serializer):
             )
         if kind in (Type.IN, Type.OUT) and attrs["quantity"] == 0:
             raise serializers.ValidationError({"quantity": ["Quantity must be at least 1."]})
-        if kind != Type.IN and (attrs.get("unit_cost") is not None or attrs.get("supplier")):
-            raise serializers.ValidationError("Unit cost and supplier only apply to stock-in movements.")
+        if kind != Type.IN and attrs.get("unit_cost") is not None:
+            raise serializers.ValidationError(
+                {"unit_cost": ["Unit cost only applies to stock-in movements."]}
+            )
         return attrs

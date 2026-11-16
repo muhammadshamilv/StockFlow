@@ -12,9 +12,8 @@ from decimal import Decimal
 
 from django.db import transaction
 
-from apps.catalog.models import Product, Supplier
+from apps.catalog.models import Product
 from apps.core.exceptions import BusinessRuleViolation
-from apps.core.signals import emit_activity
 from apps.core.utils import money
 
 from .models import StockMovement
@@ -39,7 +38,6 @@ def _apply(
     delta: int,
     user=None,
     unit_cost: Decimal | None = None,
-    supplier: Supplier | None = None,
     reference: str = "",
     note: str = "",
 ) -> StockMovement:
@@ -74,7 +72,6 @@ def _apply(
             quantity_before=before,
             quantity_after=after,
             unit_cost=unit_cost,
-            supplier=supplier,
             reference=reference,
             note=note,
             created_by=user,
@@ -108,22 +105,18 @@ def stock_in(
     quantity: int,
     user=None,
     unit_cost: Decimal | None = None,
-    supplier: Supplier | None = None,
     reference: str = "",
     note: str = "",
 ) -> StockMovement:
-    movement = _apply(
+    return _apply(
         product=product,
         movement_type=Type.IN,
         delta=quantity,
         user=user,
         unit_cost=unit_cost,
-        supplier=supplier,
         reference=reference,
         note=note,
     )
-    emit_activity(actor=user, verb="stock.in", target=movement.product, metadata={"quantity": quantity})
-    return movement
 
 
 def stock_out(
@@ -131,7 +124,7 @@ def stock_out(
 ) -> StockMovement:
     if movement_type not in (Type.OUT, Type.SALE):
         raise ValueError("stock_out only handles OUT or SALE movements.")
-    movement = _apply(
+    return _apply(
         product=product,
         movement_type=movement_type,
         delta=-quantity,
@@ -139,9 +132,6 @@ def stock_out(
         reference=reference,
         note=note,
     )
-    if movement_type == Type.OUT:
-        emit_activity(actor=user, verb="stock.out", target=movement.product, metadata={"quantity": quantity})
-    return movement
 
 
 def stock_return(*, product, quantity: int, user=None, reference: str = "", note: str = "") -> StockMovement:
@@ -166,10 +156,4 @@ def adjust_to(*, product, counted_quantity: int, user=None, note: str = "") -> S
             user=user,
             note=note or "Stock count adjustment",
         )
-    emit_activity(
-        actor=user,
-        verb="stock.adjusted",
-        target=movement.product,
-        metadata={"from": movement.quantity_before, "to": movement.quantity_after},
-    )
     return movement

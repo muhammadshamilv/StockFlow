@@ -1,5 +1,3 @@
-from decimal import Decimal
-
 import pytest
 
 from apps.catalog.models import Product
@@ -85,7 +83,8 @@ def test_price_override_requires_manager(client_for, staff_user, manager_user, t
     response = client_for(manager_user).post(URL, payload, format="json")
     assert response.status_code == 201
     assert response.data["total"] == "1.00"
-    assert Decimal(response.data["gross_profit"]) == Decimal("-299.00")
+    assert response.data["gross_profit"] == "-299.00"  # money is always a 2-dp string
+    assert response.json()["gross_profit"] == "-299.00"
 
 
 def test_discount_cannot_exceed_subtotal(client_for, staff_user, two_products):

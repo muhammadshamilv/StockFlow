@@ -2,7 +2,7 @@ from django.conf import settings
 from django.db import models
 from django.db.models import Q
 
-from apps.catalog.models import Product, Supplier
+from apps.catalog.models import Product
 
 
 class StockMovement(models.Model):
@@ -26,9 +26,6 @@ class StockMovement(models.Model):
     quantity_before = models.PositiveIntegerField()
     quantity_after = models.PositiveIntegerField()
     unit_cost = models.DecimalField(max_digits=12, decimal_places=2, null=True, blank=True)
-    supplier = models.ForeignKey(
-        Supplier, on_delete=models.SET_NULL, null=True, blank=True, related_name="movements"
-    )
     reference = models.CharField(max_length=60, blank=True, db_index=True)
     note = models.CharField(max_length=255, blank=True)
     created_by = models.ForeignKey(

@@ -24,7 +24,6 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.core.permissions import IsAdmin
-from apps.core.signals import emit_activity
 
 from . import services
 from .authentication import enforce_csrf
@@ -221,7 +220,6 @@ class MeView(APIView):
         serializer = ProfileUpdateSerializer(request.user, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
-        emit_activity(actor=user, verb="profile.updated", target=user)
         return Response(UserSerializer(user).data)
 
 
@@ -269,17 +267,10 @@ class UserViewSet(
         return User.objects.all()
 
     def perform_create(self, serializer):
-        user = serializer.save()
-        emit_activity(actor=self.request.user, verb="user.created", target=user, metadata={"role": user.role})
+        serializer.save()
 
     def perform_update(self, serializer):
-        user = serializer.save()
-        emit_activity(
-            actor=self.request.user,
-            verb="user.updated",
-            target=user,
-            metadata={k: v for k, v in serializer.validated_data.items() if k != "password"},
-        )
+        serializer.save()
 
     @extend_schema(
         responses=inline_serializer(

@@ -5,8 +5,6 @@ from rest_framework.decorators import action
 from rest_framework.permissions import BasePermission
 from rest_framework.response import Response
 
-from apps.core.signals import emit_activity
-
 from . import selectors, services
 from .filters import CustomerFilter, SaleFilter
 from .invoice_pdf import render_invoice
@@ -46,15 +44,12 @@ class CustomerViewSet(viewsets.ModelViewSet):
         return selectors.customer_queryset()
 
     def perform_create(self, serializer):
-        customer = serializer.save()
-        emit_activity(actor=self.request.user, verb="customer.created", target=customer)
+        serializer.save()
 
     def perform_update(self, serializer):
-        customer = serializer.save()
-        emit_activity(actor=self.request.user, verb="customer.updated", target=customer)
+        serializer.save()
 
     def perform_destroy(self, instance):
-        emit_activity(actor=self.request.user, verb="customer.deleted", metadata={"name": instance.name})
         instance.delete()
 
     @extend_schema(responses=CustomerOptionSerializer(many=True))

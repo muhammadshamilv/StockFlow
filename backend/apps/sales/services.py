@@ -11,7 +11,6 @@ from django.utils import timezone
 
 from apps.catalog.models import Product
 from apps.core.exceptions import BusinessRuleViolation, ConflictError
-from apps.core.signals import emit_activity
 from apps.core.utils import money
 from apps.inventory import services as inventory
 from apps.inventory.models import StockMovement
@@ -134,12 +133,6 @@ def create_sale(
             movement_type=StockMovement.Type.SALE,
         )
 
-    emit_activity(
-        actor=user,
-        verb="sale.created",
-        target=sale,
-        metadata={"total": str(sale.total), "items": len(prepared)},
-    )
     return sale
 
 
@@ -163,5 +156,4 @@ def cancel_sale(*, sale: Sale, user, reason: str) -> Sale:
     sale.cancelled_by = user
     sale.cancel_reason = reason
     sale.save(update_fields=["status", "cancelled_at", "cancelled_by", "cancel_reason", "updated_at"])
-    emit_activity(actor=user, verb="sale.cancelled", target=sale, metadata={"reason": reason})
     return sale

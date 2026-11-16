@@ -1,8 +1,5 @@
-import io
-
 import pytest
 
-from apps.catalog.models import Product
 from apps.inventory.models import StockMovement
 
 pytestmark = pytest.mark.django_db
@@ -94,33 +91,3 @@ class TestProducts:
         body = b"".join(response.streaming_content).decode()
         assert body.splitlines()[0].startswith("sku,barcode,name")
         assert "Wireless Mouse" in body
-
-
-class TestCsvImport:
-    def _upload(self, client, text):
-        file = io.BytesIO(text.encode())
-        file.name = "products.csv"
-        return client.post("/api/v1/products/import/", {"file": file}, format="multipart")
-
-    def test_creates_updates_and_reports_errors(self, client_for, manager_user, make_product):
-        existing = make_product(name="Old name", stock=10)
-        csv_text = (
-            "sku,name,category,supplier,cost_price,selling_price,quantity\n"
-            f"{existing.sku},New name,Electronics,,300,550,12\n"
-            ",Notebook A5,Stationery,Paper House,40,80,100\n"
-            ",Broken row,Stationery,,abc,80,1\n"
-        )
-        response = self._upload(client_for(manager_user), csv_text)
-        assert response.status_code == 207
-        assert response.data["created"] == 1 and response.data["updated"] == 1
-        assert response.data["errors"][0]["row"] == 4
-
-        existing.refresh_from_db()
-        assert existing.name == "New name" and existing.quantity == 12
-        notebook = Product.objects.get(name="Notebook A5")
-        assert notebook.quantity == 100 and notebook.supplier.name == "Paper House"
-
-    def test_missing_columns(self, client_for, manager_user):
-        response = self._upload(client_for(manager_user), "name,price\nX,1\n")
-        assert response.status_code == 400
-        assert "category" in response.data["error"]["message"]

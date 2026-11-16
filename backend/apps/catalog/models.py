@@ -27,24 +27,6 @@ class Category(TimeStampedModel):
         return self.name
 
 
-class Supplier(TimeStampedModel):
-    name = models.CharField(max_length=150)
-    contact_person = models.CharField(max_length=120, blank=True)
-    email = models.EmailField(blank=True)
-    phone = models.CharField(max_length=20, blank=True)
-    address = models.TextField(blank=True)
-    tax_id = models.CharField("GSTIN / Tax ID", max_length=20, blank=True)
-    notes = models.TextField(blank=True)
-    is_active = models.BooleanField(default=True)
-
-    class Meta:
-        ordering = ["name"]
-        constraints = [models.UniqueConstraint(Lower("name"), name="supplier_name_ci_unique")]
-
-    def __str__(self) -> str:
-        return self.name
-
-
 class ProductQuerySet(models.QuerySet):
     def active(self):
         return self.filter(is_active=True)
@@ -80,9 +62,6 @@ class Product(TimeStampedModel):
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     category = models.ForeignKey(Category, on_delete=models.PROTECT, related_name="products")
-    supplier = models.ForeignKey(
-        Supplier, on_delete=models.SET_NULL, null=True, blank=True, related_name="products"
-    )
     unit = models.CharField(max_length=8, choices=Unit.choices, default=Unit.PIECE)
     cost_price = models.DecimalField(
         max_digits=12, decimal_places=2, default=Decimal("0.00"), validators=[MinValueValidator(0)]
@@ -91,7 +70,6 @@ class Product(TimeStampedModel):
     # Never edit `quantity` directly – always go through inventory.services
     quantity = models.PositiveIntegerField(default=0, editable=False)
     reorder_level = models.PositiveIntegerField(default=10)
-    image = models.ImageField(upload_to="products/%Y/%m/", blank=True, null=True)
     is_active = models.BooleanField(default=True, db_index=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="+"
